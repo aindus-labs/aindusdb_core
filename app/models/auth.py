@@ -27,7 +27,7 @@ Example:
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from enum import Enum
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, validator, model_validator, field_validator
 import re
 
 
@@ -91,7 +91,7 @@ class UserBase(BaseModel):
     is_active: bool = Field(True, description="Compte actif/désactivé")
     role: UserRole = Field(UserRole.USER, description="Rôle principal de l'utilisateur")
     
-    @validator('username')
+    @field_validator('username')
     def validate_username(cls, v):
         """Valider format du nom d'utilisateur."""
         if not re.match(r'^[a-zA-Z0-9_-]+$', v):
@@ -120,7 +120,7 @@ class UserCreate(UserBase):
     """
     password: str = Field(..., min_length=8, max_length=128, description="Mot de passe sécurisé")
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         """Valider la robustesse du mot de passe."""
         if len(v) < 8:
@@ -310,7 +310,7 @@ class PasswordChangeRequest(BaseModel):
     current_password: str = Field(..., description="Mot de passe actuel")
     new_password: str = Field(..., min_length=8, description="Nouveau mot de passe")
     
-    @validator('new_password')
+    @field_validator('new_password')
     def validate_new_password(cls, v):
         """Appliquer les mêmes règles que UserCreate.password"""
         # Réutiliser la validation de UserCreate

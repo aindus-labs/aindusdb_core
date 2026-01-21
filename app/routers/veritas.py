@@ -76,7 +76,7 @@ class CalculationRequest(BaseModel):
     expected_result: Optional[Dict[str, Any]] = Field(None,
                                                     description="Résultat attendu (pour validation)")
     verification_method: str = Field("python_sandbox",
-                                   regex="^(python_sandbox|basic_math|wolfram_alpha)$",
+                                   pattern="^(python_sandbox|basic_math|wolfram_alpha)$",
                                    description="Méthode de vérification")
     
     class Config:

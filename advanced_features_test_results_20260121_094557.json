@@ -1,0 +1,24 @@
+{
+  "zero_trust": {
+    "passed": 0,
+    "failed": 1,
+    "details": [
+      "\u274c Zero Trust Error: 'user_id'"
+    ]
+  },
+  "quantum_crypto": {
+    "passed": 0,
+    "failed": 1,
+    "details": [
+      "\u274c Quantum Crypto Error: Cannot cast scalar from dtype('S32') to dtype('int64') according to the rule 'safe'"
+    ]
+  },
+  "ai_optimization": {
+    "passed": 0,
+    "failed": 2,
+    "details": [
+      "\u274c DB tuning: FAILED",
+      "\u274c AI Optimization Error: unsupported operand type(s) for -: 'datetime.datetime' and 'int'"
+    ]
+  }
+}

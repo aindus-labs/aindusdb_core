@@ -328,7 +328,7 @@ async def get_security_events(
 async def export_security_logs(
     start_time: datetime,
     end_time: datetime,
-    format: str = Query(default="json", regex="^(json|csv)$"),
+    format: str = Query(default="json", pattern="^(json|csv)$"),
     current_user: dict = Depends(get_current_user_from_token)
 ):
     """Exporter les logs de sécurité."""

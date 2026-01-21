@@ -69,13 +69,13 @@ class HealthResponse(BaseModel):
     status: str = Field(
         ...,
         description="État global du système",
-        regex="^(healthy|degraded|unhealthy)$",
+        pattern="^(healthy|degraded|unhealthy)$",
         example="healthy"
     )
     database: str = Field(
         ...,
         description="État de la connexion PostgreSQL",
-        regex="^(connected|disconnected|error)$",
+        pattern="^(connected|disconnected|error)$",
         example="connected"
     )
     pgvector: Optional[str] = Field(

@@ -8,7 +8,7 @@ Objectif : Phase 2.2 - Validation d'entrée stricte
 
 import re
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, validator, constr, Field
+from pydantic import BaseModel, validator, constr, Field, model_validator, field_validator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -63,14 +63,14 @@ XSS_PATTERNS = [
 class SecureBaseModel(BaseModel):
     """Modèle de base avec validation sécurisée."""
     
-    @validator('*', pre=True)
+    @field_validator('*', pre=True)
     def validate_not_empty(cls, v):
         """Valider que les chaînes ne sont pas vides."""
         if isinstance(v, str) and not v.strip():
             raise ValueError("Field cannot be empty")
         return v
     
-    @validator('*', pre=True)
+    @field_validator('*', pre=True)
     def validate_no_null_bytes(cls, v):
         """Bloquer les bytes nuls."""
         if isinstance(v, str) and '\x00' in v:
@@ -79,9 +79,9 @@ class SecureBaseModel(BaseModel):
 
 class SecureText(SecureBaseModel):
     """Texte sécurisé avec validation de base."""
-    text: constr(regex=SAFE_TEXT_PATTERN, min_length=1, max_length=1000)
+    text: constr(pattern=SAFE_TEXT_PATTERN, min_length=1, max_length=1000)
     
-    @validator('text')
+    @field_validator('text')
     def validate_no_dangerous_keywords(cls, v):
         """Vérifier l'absence de mots-clés dangereux."""
         text_lower = v.lower()
@@ -92,11 +92,11 @@ class SecureText(SecureBaseModel):
 
 class SecureQuery(SecureBaseModel):
     """Requête sécurisée pour VERITAS."""
-    query: constr(regex=SAFE_QUERY_PATTERN, min_length=1, max_length=500)
-    formula: Optional[constr(regex=SAFE_FORMULA_PATTERN, max_length=200)] = None
+    query: constr(pattern=SAFE_QUERY_PATTERN, min_length=1, max_length=500)
+    formula: Optional[constr(pattern=SAFE_FORMULA_PATTERN, max_length=200)] = None
     variables: Optional[Dict[str, float]] = None
     
-    @validator('query')
+    @field_validator('query')
     def validate_query_content(cls, v):
         """Validation avancée du contenu de la requête."""
         # Vérifier les injections
@@ -112,7 +112,7 @@ class SecureQuery(SecureBaseModel):
         
         return v
     
-    @validator('formula', pre=True)
+    @field_validator('formula', pre=True)
     def validate_formula(cls, v):
         """Validation spécifique pour les formules mathématiques."""
         if v is None:
@@ -127,7 +127,7 @@ class SecureQuery(SecureBaseModel):
         
         return v
     
-    @validator('variables')
+    @field_validator('variables')
     def validate_variables(cls, v):
         """Valider les variables mathématiques."""
         if v is None:
@@ -145,9 +145,9 @@ class SecureQuery(SecureBaseModel):
 
 class SecureIdentifier(SecureBaseModel):
     """Identifiant sécurisé (usernames, IDs, etc.)."""
-    identifier: constr(regex=SAFE_IDENTIFIER_PATTERN, min_length=3, max_length=50)
+    identifier: constr(pattern=SAFE_IDENTIFIER_PATTERN, min_length=3, max_length=50)
     
-    @validator('identifier')
+    @field_validator('identifier')
     def validate_identifier(cls, v):
         """Validation additionnelle pour les identifiants."""
         # Pas de mots réservés
@@ -158,9 +158,9 @@ class SecureIdentifier(SecureBaseModel):
 
 class SecureEmail(SecureBaseModel):
     """Email sécurisé."""
-    email: constr(regex=SAFE_EMAIL_PATTERN, max_length=255)
+    email: constr(pattern=SAFE_EMAIL_PATTERN, max_length=255)
     
-    @validator('email')
+    @field_validator('email')
     def validate_email(cls, v):
         """Validation email avancée."""
         # Pas de domaines suspects
@@ -174,7 +174,7 @@ class SecurePassword(SecureBaseModel):
     """Mot de passe sécurisé."""
     password: constr(min_length=8, max_length=128)
     
-    @validator('password')
+    @field_validator('password')
     def validate_password_strength(cls, v):
         """Valider la force du mot de passe."""
         if not re.search(r'[A-Z]', v):
@@ -189,9 +189,9 @@ class SecurePassword(SecureBaseModel):
 
 class SecurePath(SecureBaseModel):
     """Chemin de fichier sécurisé."""
-    path: constr(regex=SAFE_PATH_PATTERN, min_length=1, max_length=255)
+    path: constr(pattern=SAFE_PATH_PATTERN, min_length=1, max_length=255)
     
-    @validator('path')
+    @field_validator('path')
     def validate_path(cls, v):
         """Valider que le chemin est sécurisé."""
         # Pas de directory traversal
@@ -208,7 +208,7 @@ class SecureJSON(SecureBaseModel):
     """JSON sécurisé."""
     data: Dict[str, Any]
     
-    @validator('data')
+    @field_validator('data')
     def validate_json_content(cls, v):
         """Valider le contenu JSON."""
         # Vérifier la taille
@@ -247,7 +247,7 @@ class VeritasQueryRequest(SecureQuery):
     confidence_threshold: Optional[float] = Field(None, ge=0.0, le=1.0)
     sources: Optional[List[str]] = None
     
-    @validator('sources')
+    @field_validator('sources')
     def validate_sources(cls, v):
         """Valider les sources."""
         if v is None:
@@ -267,11 +267,11 @@ class VeritasQueryRequest(SecureQuery):
 class CalculationRequest(SecureBaseModel):
     """Requête de calcul sécurisée."""
     input_data: Dict[str, float]
-    formula: constr(regex=SAFE_FORMULA_PATTERN, min_length=1, max_length=200)
+    formula: constr(pattern=SAFE_FORMULA_PATTERN, min_length=1, max_length=200)
     expected_result: Optional[float] = None
-    verification_method: str = Field("mathematical", regex="^(mathematical|numerical|symbolic)$")
+    verification_method: str = Field("mathematical", pattern="^(mathematical|numerical|symbolic)$")
     
-    @validator('input_data')
+    @field_validator('input_data')
     def validate_input_data(cls, v):
         """Valider les données d'entrée."""
         if not v:
@@ -290,7 +290,7 @@ class CalculationRequest(SecureBaseModel):
         
         return v
     
-    @validator('formula')
+    @field_validator('formula')
     def validate_formula(cls, v):
         """Valider la formule."""
         try:
@@ -302,12 +302,12 @@ class CalculationRequest(SecureBaseModel):
 
 class UserRegistrationRequest(SecureBaseModel):
     """Requête d'inscription sécurisée."""
-    username: constr(regex=SAFE_IDENTIFIER_PATTERN, min_length=3, max_length=30)
-    email: constr(regex=SAFE_EMAIL_PATTERN, max_length=255)
+    username: constr(pattern=SAFE_IDENTIFIER_PATTERN, min_length=3, max_length=30)
+    email: constr(pattern=SAFE_EMAIL_PATTERN, max_length=255)
     password: constr(min_length=8, max_length=128)
     full_name: Optional[constr(max_length=100)] = None
     
-    @validator('username')
+    @field_validator('username')
     def validate_username(cls, v):
         """Validation spécifique du username."""
         reserved = ['admin', 'root', 'system', 'api', 'www', 'mail', 'ftp']
@@ -315,7 +315,7 @@ class UserRegistrationRequest(SecureBaseModel):
             raise ValueError(f"Username '{v}' is reserved")
         return v
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         """Valider la force du mot de passe."""
         if not re.search(r'[A-Z]', v):

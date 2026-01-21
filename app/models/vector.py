@@ -22,7 +22,7 @@ Example:
     )
 """
 from typing import List, Optional, Any, Dict
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator, field_validator
 from .veritas import ContentType, QualityMetadata, SourceMetadata
 
 
@@ -73,7 +73,7 @@ class VectorBase(BaseModel):
     )
     source_hash: Optional[str] = Field(
         None,
-        regex=r"^[a-f0-9]{64}$",
+        pattern=r"^[a-f0-9]{64}$",
         description="Hash SHA-256 du document source pour traçabilité VERITAS"
     )
     quality_metadata: Optional[QualityMetadata] = Field(
@@ -90,7 +90,7 @@ class VectorBase(BaseModel):
         description="Document compatible avec protocole VERITAS"
     )
 
-    @validator('embedding')
+    @field_validator('embedding')
     def validate_embedding(cls, v):
         """
         Valider que l'embedding est correct.
@@ -256,7 +256,7 @@ class VectorSearchRequest(BaseModel):
         example=0.5
     )
 
-    @validator('query_vector')
+    @field_validator('query_vector')
     def validate_query_vector(cls, v):
         """
         Valider le vecteur de recherche.
@@ -313,7 +313,7 @@ class VectorSearchResponse(BaseModel):
     status: str = Field(
         "success",
         description="Statut de l'opération",
-        regex="^(success|error)$",
+        pattern="^(success|error)$",
         example="success"
     )
     message: str = Field(

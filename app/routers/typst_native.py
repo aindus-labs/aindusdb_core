@@ -46,7 +46,7 @@ class TypstGenerationRequest(BaseModel):
     domain: ContentDomain = Field(..., description="Domaine scientifique")
     strategy: GenerationStrategy = Field(default=GenerationStrategy.HYBRID, 
                                        description="Stratégie de génération")
-    complexity_level: str = Field(default="medium", regex="^(simple|medium|complex)$",
+    complexity_level: str = Field(default="medium", pattern="^(simple|medium|complex)$",
                                 description="Niveau de complexité souhaité")
     include_proof: bool = Field(default=True, description="Inclure preuves détaillées")
     include_dimensional_analysis: bool = Field(default=False, 

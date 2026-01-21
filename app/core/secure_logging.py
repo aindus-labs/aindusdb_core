@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import gzip
 import aiofiles
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator, field_validator
 
 from app.core.database import db_manager
 
@@ -24,7 +24,7 @@ from app.core.database import db_manager
 class SecurityLogEntry(BaseModel):
     """Entrée de log de sécurité."""
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    level: str = Field(..., regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
+    level: str = Field(..., pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
     event_type: str = Field(..., description="Type d'événement")
     user_id: Optional[str] = None
     ip_address: Optional[str] = None
@@ -37,14 +37,14 @@ class SecurityLogEntry(BaseModel):
     risk_score: int = Field(default=0, ge=0, le=10)
     correlation_id: Optional[str] = None
     
-    @validator('user_id')
+    @field_validator('user_id')
     def hash_user_id(cls, v):
         """Hasher l'ID utilisateur pour la confidentialité."""
         if v:
             return hashlib.sha256(v.encode()).hexdigest()[:16]
         return v
     
-    @validator('ip_address')
+    @field_validator('ip_address')
     def anonymize_ip(cls, v):
         """Anonymiser l'IP (GDPR)."""
         if v and '.' in v:

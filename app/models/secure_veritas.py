@@ -6,7 +6,7 @@ Ce module étend les modèles VERITAS avec validation de sécurité renforcée.
 
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator, field_validator
 import re
 
 from .secure_schemas import SecureQuery, SecureJSON
@@ -31,7 +31,7 @@ class SecureVerificationRequest(SecureQuery):
     sources: Optional[List[str]] = None
     max_sources: int = Field(10, ge=1, le=50)
     
-    @validator('sources')
+    @field_validator('sources')
     def validate_sources(cls, v):
         """Valider les sources."""
         if v is None:
@@ -56,10 +56,10 @@ class SecureCalculationRequest(BaseModel):
     input_data: Dict[str, float]
     formula: str
     expected_result: Optional[Dict[str, float]] = None
-    verification_method: str = Field("mathematical", regex="^(mathematical|numerical|symbolic)$")
+    verification_method: str = Field("mathematical", pattern="^(mathematical|numerical|symbolic)$")
     max_variables: int = Field(20, ge=1, le=100)
     
-    @validator('input_data')
+    @field_validator('input_data')
     def validate_input_data(cls, v, values):
         """Valider les données d'entrée."""
         if not v:
@@ -88,7 +88,7 @@ class SecureCalculationRequest(BaseModel):
         
         return v
     
-    @validator('formula')
+    @field_validator('formula')
     def validate_formula(cls, v):
         """Valider la formule avec SafeMathEvaluator."""
         if not v or not v.strip():
@@ -109,7 +109,7 @@ class SecureCalculationRequest(BaseModel):
         
         return v.strip()
     
-    @validator('expected_result')
+    @field_validator('expected_result')
     def validate_expected_result(cls, v):
         """Valider le résultat attendu."""
         if v is None:
@@ -134,14 +134,14 @@ class SecureVeritasResponse(BaseModel):
     processing_time_ms: int = Field(..., ge=0)
     timestamp: datetime
     
-    @validator('query_id')
+    @field_validator('query_id')
     def validate_query_id(cls, v):
         """Valider l'ID de requête."""
         if not re.match(r'^[a-zA-Z0-9_-]+$', v):
             raise ValueError("Query ID must be alphanumeric")
         return v
     
-    @validator('answer')
+    @field_validator('answer')
     def validate_answer(cls, v):
         """Valider la réponse."""
         if not v or not v.strip():
@@ -169,7 +169,7 @@ class SecureVeritasResponse(BaseModel):
         
         return v
     
-    @validator('sources')
+    @field_validator('sources')
     def validate_sources(cls, v):
         """Valider les sources."""
         if not v:
@@ -180,7 +180,7 @@ class SecureVeritasResponse(BaseModel):
         
         return v
     
-    @validator('proofs')
+    @field_validator('proofs')
     def validate_proofs(cls, v):
         """Valider les preuves."""
         if len(v) > 100:
@@ -193,7 +193,7 @@ class SecureVeritasResponse(BaseModel):
         
         return v
     
-    @validator('traces')
+    @field_validator('traces')
     def validate_traces(cls, v):
         """Valider les traces."""
         if len(v) > 1000:
@@ -211,7 +211,7 @@ class SecureProofSearchRequest(BaseModel):
     formula_pattern: Optional[str] = None
     limit: int = Field(10, ge=1, le=100)
     
-    @validator('proof_type')
+    @field_validator('proof_type')
     def validate_proof_type(cls, v):
         """Valider le type de preuve."""
         if v is None:
@@ -222,7 +222,7 @@ class SecureProofSearchRequest(BaseModel):
             raise ValueError(f"Invalid proof type. Must be one of: {allowed_types}")
         return v
     
-    @validator('formula_pattern')
+    @field_validator('formula_pattern')
     def validate_formula_pattern(cls, v):
         """Valider le pattern de formule."""
         if v is None:
@@ -241,7 +241,7 @@ class SecureProofSearchRequest(BaseModel):
         
         return v
     
-    @validator('date_from', 'date_to')
+    @field_validator('date_from', 'date_to')
     def validate_date_range(cls, v, values):
         """Valider la plage de dates."""
         if v is None:
@@ -267,7 +267,7 @@ class SecurityMetadata(BaseModel):
     scan_timestamp: datetime
     scanner_version: str = "1.0.0"
     
-    @validator('threats_blocked')
+    @field_validator('threats_blocked')
     def validate_threats(cls, v):
         """Valider la liste des menaces."""
         allowed_threats = [
@@ -286,7 +286,7 @@ class SecureVeritasReadyResponse(SecureVeritasResponse):
     """Réponse VERITAS avec métadonnées de sécurité."""
     security_metadata: SecurityMetadata
     
-    @validator('security_metadata')
+    @field_validator('security_metadata')
     def validate_security_metadata(cls, v):
         """Valider les métadonnées de sécurité."""
         if not v.validation_passed:

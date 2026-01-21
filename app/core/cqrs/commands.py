@@ -195,7 +195,7 @@ class RecordMetricCommand(Command):
     """Commande pour enregistrer une métrique."""
     metric_name: str = Field(..., min_length=1)
     metric_value: float = Field(...)
-    metric_type: str = Field(..., regex="^(counter|gauge|histogram|summary)$")
+    metric_type: str = Field(..., pattern="^(counter|gauge|histogram|summary)$")
     labels: Dict[str, str] = Field(default_factory=dict)
     unit: Optional[str] = None
 
@@ -206,7 +206,7 @@ class InvalidateCacheCommand(Command):
     """Commande pour invalider le cache."""
     cache_key: Optional[str] = None
     cache_pattern: Optional[str] = None
-    cache_type: str = Field(default="redis", regex="^(redis|memory|all)$")
+    cache_type: str = Field(default="redis", pattern="^(redis|memory|all)$")
     reason: Optional[str] = None
 
 

@@ -131,7 +131,7 @@ class SearchVectorsQuery(Query):
     include_metadata: bool = True
     include_embeddings: bool = False
     sort_by: str = "similarity"
-    order: str = Field(default="desc", regex="^(asc|desc)$")
+    order: str = Field(default="desc", pattern="^(asc|desc)$")
 
 
 class ListVectorsQuery(Query):
@@ -142,7 +142,7 @@ class ListVectorsQuery(Query):
     include_metadata: bool = True
     include_embeddings: bool = False
     sort_by: str = "created_at"
-    order: str = Field(default="desc", regex="^(asc|desc)$")
+    order: str = Field(default="desc", pattern="^(asc|desc)$")
 
 
 class CountVectorsQuery(Query):
@@ -172,14 +172,14 @@ class SearchVeritasProofsQuery(Query):
     limit: int = Field(default=50, ge=1, le=1000)
     offset: int = Field(default=0, ge=0)
     sort_by: str = "confidence_score"
-    order: str = Field(default="desc", regex="^(asc|desc)$")
+    order: str = Field(default="desc", pattern="^(asc|desc)$")
 
 
 class GetVeritasStatsQuery(Query):
     """Query pour obtenir statistiques VERITAS."""
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
-    group_by: str = Field(default="day", regex="^(hour|day|week|month)$")
+    group_by: str = Field(default="day", pattern="^(hour|day|week|month)$")
     include_distribution: bool = True
     include_trends: bool = True
 
@@ -191,7 +191,7 @@ class GetVectorAnalyticsQuery(Query):
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
     metrics: List[str] = Field(default_factory=lambda: ["count", "avg_quality", "source_distribution"])
-    group_by: str = Field(default="day", regex="^(hour|day|week|month)$")
+    group_by: str = Field(default="day", pattern="^(hour|day|week|month)$")
     filters: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -200,8 +200,8 @@ class GetPerformanceMetricsQuery(Query):
     metric_names: List[str] = Field(default_factory=list)
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
-    aggregation: str = Field(default="avg", regex="^(avg|sum|min|max|count)$")
-    resolution: str = Field(default="5m", regex="^(1m|5m|15m|1h|1d)$")
+    aggregation: str = Field(default="avg", pattern="^(avg|sum|min|max|count)$")
+    resolution: str = Field(default="5m", pattern="^(1m|5m|15m|1h|1d)$")
 
 
 class GetSystemHealthQuery(Query):
@@ -242,7 +242,7 @@ class GetUserActivityQuery(Query):
 
 class GetCacheStatsQuery(Query):
     """Query pour statistiques du cache."""
-    cache_type: str = Field(default="all", regex="^(redis|memory|all)$")
+    cache_type: str = Field(default="all", pattern="^(redis|memory|all)$")
     include_keys: bool = False
     include_memory_usage: bool = True
 
@@ -250,7 +250,7 @@ class GetCacheStatsQuery(Query):
 class CheckCacheKeyQuery(Query):
     """Query pour vérifier une clé de cache."""
     cache_key: str = Field(..., min_length=1)
-    cache_type: str = Field(default="redis", regex="^(redis|memory)$")
+    cache_type: str = Field(default="redis", pattern="^(redis|memory)$")
     include_value: bool = False
     include_ttl: bool = True
 
@@ -267,7 +267,7 @@ class GetBatchOperationStatusQuery(Query):
 
 class ListBatchOperationsQuery(Query):
     """Query pour lister les opérations batch."""
-    status: Optional[str] = Field(None, regex="^(pending|running|completed|failed)$")
+    status: Optional[str] = Field(None, pattern="^(pending|running|completed|failed)$")
     operation_type: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None

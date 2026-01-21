@@ -21,7 +21,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, confloat, conint, model_validator, field_validator
 from pydantic.types import conint, confloat
 
 
@@ -153,7 +153,7 @@ class SourceMetadata(BaseModel):
     document_id: int = Field(..., description="ID unique du document source")
     title: str = Field(..., min_length=1, max_length=500, description="Titre du document")
     content_type: ContentType = Field(default=ContentType.MARKDOWN, description="Type de contenu")
-    source_hash: Optional[str] = Field(None, regex=r"^[a-f0-9]{64}$", description="Hash SHA-256 du contenu source")
+    source_hash: Optional[str] = Field(None, pattern=r"^[a-f0-9]{64}$", description="Hash SHA-256 du contenu source")
     quality_score: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Score qualité du document")
     extraction_confidence: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Confiance de l'extraction")
     page_number: Optional[conint(ge=1)] = Field(None, description="Numéro de page source")
@@ -191,7 +191,7 @@ class QualityMetadata(BaseModel):
     typesetting_format: Optional[TypesettingFormat] = Field(None, description="Format de composition utilisé")
     format_parsing_success: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Succès parsing format")
     validation_score: confloat(ge=0.0, le=1.0) = Field(..., description="Score validation contenu")
-    source_reliability: str = Field(..., regex="^(low|medium|high|verified)$", description="Fiabilité source")
+    source_reliability: str = Field(..., pattern="^(low|medium|high|verified)$", description="Fiabilité source")
     ocr_confidence: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Confiance OCR")
     formula_completeness: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Complétude formules")
     structural_integrity: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Intégrité structure")
@@ -264,7 +264,7 @@ class VeritasProof(BaseModel):
     verifier_system: Optional[str] = Field(None, max_length=50, description="Système de vérification")
     error_details: Optional[str] = Field(None, max_length=1000, description="Détails erreurs si échec")
     
-    @validator('computation_steps')
+    @field_validator('computation_steps')
     def validate_steps_order(cls, v):
         """Valider que les étapes sont dans l'ordre."""
         if len(v) > 1:
@@ -303,7 +303,7 @@ class ThoughtTrace(BaseModel):
     source_documents: List[int] = Field(default_factory=list, description="IDs documents sources")
     veritas_tags: List[str] = Field(default_factory=list, max_items=10, description="Tags catégorisation")
     
-    @validator('veritas_tags')
+    @field_validator('veritas_tags')
     def validate_tags(cls, v):
         """Valider les tags."""
         return [tag.lower().strip() for tag in v if tag.strip()]
@@ -339,7 +339,8 @@ class ConfidenceMetrics(BaseModel):
     logical_consistency: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Cohérence logique")
     dimensional_analysis: Optional[confloat(ge=0.0, le=1.0)] = Field(None, description="Analyse dimensionnelle")
     
-    @root_validator
+    @model_validator(mode='before')
+    @classmethod
     def validate_consistency(cls, values):
         """Valider cohérence des métriques."""
         overall = values.get('overall')
@@ -450,14 +451,15 @@ class VeritasReadyResponse(BaseModel):
             }
         }
     
-    @validator('thought_trace')
+    @field_validator('thought_trace')
     def validate_thought_trace(cls, v):
         """Valider format des traces de pensée."""
         if v and not ('<thought>' in v and '</thought>' in v):
             raise ValueError("Thought trace must contain <thought></thought> tags")
         return v
     
-    @root_validator
+    @model_validator(mode='before')
+    @classmethod
     def validate_veritas_requirements(cls, values):
         """Valider exigences VERITAS."""
         veritas_compatible = values.get('veritas_compatible', False)

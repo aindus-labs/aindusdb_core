@@ -185,6 +185,10 @@
   },
   "active": "678d98eb547e7762",
   "lastOpenFiles": [
+    "03_DEPLOYMENT/success_100_percent.md",
+    "03_DEPLOYMENT/final_test_results.md",
+    "03_DEPLOYMENT/test_corrections_summary.md",
+    "03_DEPLOYMENT/advanced_features_test_report.md",
     "03_DEPLOYMENT/test_validation_guide.md",
     "08_REFERENCE/api_reference.md",
     "08_REFERENCE/configuration.md",
@@ -207,10 +211,6 @@
     "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 1.md",
     "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 8.md",
     "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 7.md",
-    "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 6.md",
-    "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 5.md",
-    "04_DEVELOPMENT/advanced_tutorials.md",
-    "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 4.md",
-    "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 3.md"
+    "03_DEPLOYMENT/TEST DE DEPLOYEMENT/Sans titre 6.md"
   ]
 }
