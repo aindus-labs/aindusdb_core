@@ -1,0 +1,281 @@
+# Configuration de logging structuré pour AindusDB Core
+# Phase 7 - Monitoring Production : Logging avec rotation, formatters JSON et niveaux configurables
+#
+# Cette configuration supporte plusieurs environnements (dev, staging, prod)
+# avec rotation automatique, archivage et intégration ELK/fluentd
+
+version: 1
+disable_existing_loggers: False
+
+# ============================================================================
+# FORMATTERS - Formats de sortie pour différents usages
+# ============================================================================
+
+formatters:
+  # Format JSON structuré pour production et agrégation logs
+  json:
+    format: '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s", "module": "%(module)s", "function": "%(funcName)s", "line": %(lineno)d, "process": %(process)d, "thread": %(thread)d, "request_id": "%(request_id)s", "user_id": "%(user_id)s", "correlation_id": "%(correlation_id)s"}'
+    datefmt: '%Y-%m-%dT%H:%M:%S.%fZ'
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    
+  # Format détaillé pour développement avec couleurs
+  detailed:
+    format: '[%(asctime)s] %(levelname)-8s | %(name)-20s | %(funcName)-15s:%(lineno)-4d | %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+    
+  # Format simple pour console développement
+  simple:
+    format: '%(levelname)-8s | %(name)-15s | %(message)s'
+    
+  # Format pour audit avec contexte sécurité
+  audit:
+    format: '{"timestamp": "%(asctime)s", "audit_type": "%(audit_type)s", "user": "%(user)s", "action": "%(action)s", "resource": "%(resource)s", "result": "%(result)s", "ip": "%(ip)s", "user_agent": "%(user_agent)s", "details": %(details)s}'
+    datefmt: '%Y-%m-%dT%H:%M:%S.%fZ'
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    
+  # Format pour métriques business
+  metrics:
+    format: '{"timestamp": "%(asctime)s", "metric_name": "%(metric_name)s", "metric_value": %(metric_value)s, "metric_type": "%(metric_type)s", "tags": %(tags)s, "context": %(context)s}'
+    datefmt: '%Y-%m-%dT%H:%M:%S.%fZ'
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+
+# ============================================================================
+# FILTERS - Filtres pour enrichissement et routing des logs
+# ============================================================================
+
+filters:
+  # Filtre pour ajouter contexte de requête HTTP
+  request_context:
+    (): app.core.logging.RequestContextFilter
+    
+  # Filtre pour masquer informations sensibles (mots de passe, tokens)
+  sanitize:
+    (): app.core.logging.SanitizeFilter
+    patterns:
+      - 'password'
+      - 'token'
+      - 'secret'
+      - 'key'
+    replacement: '[REDACTED]'
+    
+  # Filtre pour rate limiting des logs (éviter spam)
+  rate_limit:
+    (): app.core.logging.RateLimitFilter
+    max_per_minute: 1000
+    
+  # Filtre niveau pour séparer logs critiques
+  critical_only:
+    (): app.core.logging.LevelFilter
+    level: CRITICAL
+
+# ============================================================================
+# HANDLERS - Gestionnaires de sortie avec rotation et archivage
+# ============================================================================
+
+handlers:
+  # Console pour développement avec couleurs
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: detailed
+    stream: ext://sys.stdout
+    filters: [request_context, sanitize]
+    
+  # Console simple pour conteneurs Docker
+  console_simple:
+    class: logging.StreamHandler
+    level: INFO  
+    formatter: json
+    stream: ext://sys.stdout
+    filters: [request_context, sanitize, rate_limit]
+    
+  # Fichiers de logs applicatifs avec rotation quotidienne
+  app_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/aindusdb.log
+    when: midnight
+    interval: 1
+    backupCount: 30  # Garder 30 jours
+    encoding: utf8
+    filters: [request_context, sanitize]
+    
+  # Fichiers pour erreurs uniquement avec rotation par taille
+  error_file:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: json
+    filename: logs/aindusdb_errors.log
+    maxBytes: 52428800  # 50MB
+    backupCount: 10
+    encoding: utf8
+    filters: [request_context, sanitize]
+    
+  # Fichiers audit sécurisés avec archivage
+  audit_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: audit
+    filename: logs/audit/aindusdb_audit.log
+    when: midnight
+    interval: 1
+    backupCount: 365  # Audit : garder 1 an
+    encoding: utf8
+    
+  # Métriques business dans fichiers séparés
+  metrics_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: metrics
+    filename: logs/metrics/aindusdb_metrics.log
+    when: H  # Rotation horaire pour métriques
+    interval: 1
+    backupCount: 168  # 7 jours * 24h
+    encoding: utf8
+    
+  # Logs critiques avec notification immédiate
+  critical_file:
+    class: logging.handlers.RotatingFileHandler
+    level: CRITICAL
+    formatter: json
+    filename: logs/critical/aindusdb_critical.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+    filters: [critical_only]
+    
+  # Handler pour intégration Syslog (production)
+  syslog:
+    class: logging.handlers.SysLogHandler
+    level: WARNING
+    formatter: json
+    address: ['localhost', 514]  # Adapter selon environnement
+    facility: local0
+    filters: [sanitize]
+    
+  # Handler pour envoi à Elasticsearch/Fluentd
+  elasticsearch:
+    class: logging.handlers.HTTPHandler
+    level: INFO
+    formatter: json
+    host: elasticsearch.monitoring.local  # Adapter selon environnement
+    url: /aindusdb-logs/_doc
+    method: POST
+    filters: [request_context, sanitize, rate_limit]
+
+# ============================================================================
+# LOGGERS - Configuration par module avec héritage
+# ============================================================================
+
+loggers:
+  # Logger racine AindusDB
+  aindusdb:
+    level: INFO
+    handlers: [app_file, error_file]
+    propagate: False
+    
+  # Core - Composants critiques (base de données, sécurité)
+  aindusdb.core:
+    level: INFO
+    handlers: [app_file, error_file, critical_file]
+    propagate: False
+    
+  aindusdb.core.database:
+    level: DEBUG  # Plus de détails pour DB
+    handlers: [app_file, error_file]
+    propagate: False
+    
+  aindusdb.core.security:
+    level: INFO
+    handlers: [app_file, error_file, audit_file]
+    propagate: False
+    
+  # Services métier
+  aindusdb.services:
+    level: INFO
+    handlers: [app_file, error_file]
+    propagate: False
+    
+  aindusdb.services.vector:
+    level: INFO
+    handlers: [app_file, metrics_file]
+    propagate: False
+    
+  aindusdb.services.audit:
+    level: INFO
+    handlers: [audit_file]
+    propagate: False
+    
+  # API et routeurs
+  aindusdb.routers:
+    level: INFO
+    handlers: [app_file, error_file]
+    propagate: False
+    
+  aindusdb.middleware:
+    level: INFO
+    handlers: [app_file]
+    propagate: False
+    
+  # Monitoring et métriques
+  aindusdb.monitoring:
+    level: INFO
+    handlers: [metrics_file]
+    propagate: False
+    
+  # Loggers externes configurés
+  uvicorn:
+    level: WARNING
+    handlers: [app_file]
+    propagate: False
+    
+  uvicorn.access:
+    level: INFO
+    handlers: [app_file]
+    propagate: False
+    
+  asyncio:
+    level: WARNING
+    handlers: [error_file]
+    propagate: False
+    
+  sqlalchemy:
+    level: WARNING
+    handlers: [app_file]
+    propagate: False
+    
+  redis:
+    level: WARNING
+    handlers: [app_file]
+    propagate: False
+    
+  # Logger pour tests (plus verbeux)
+  aindusdb.tests:
+    level: DEBUG
+    handlers: [console]
+    propagate: False
+
+# ============================================================================
+# CONFIGURATION ROOT - Logger principal
+# ============================================================================
+
+root:
+  level: WARNING
+  handlers: [console_simple, error_file]
+
+# ============================================================================
+# CONFIGURATIONS PAR ENVIRONNEMENT
+# ============================================================================
+
+# Variables d'environnement supportées:
+# LOG_LEVEL: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# LOG_FORMAT: json, detailed, simple  
+# LOG_TO_FILE: true, false
+# LOG_TO_CONSOLE: true, false
+# LOG_TO_SYSLOG: true, false (production uniquement)
+# ELASTICSEARCH_HOST: pour logs centralisés
+
+# Utilisation:
+# export LOG_LEVEL=DEBUG LOG_FORMAT=detailed  # Développement
+# export LOG_LEVEL=INFO LOG_FORMAT=json LOG_TO_SYSLOG=true  # Production

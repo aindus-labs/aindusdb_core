@@ -1,0 +1,224 @@
+# Configuration des datasources Grafana pour AindusDB Core
+# Phase 7 - Monitoring Production : Provisioning automatique des sources de données
+
+apiVersion: 1
+
+# Liste des datasources à provisionner automatiquement
+datasources:
+  # Prometheus - Métriques principales
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: false
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 5s
+      # Custom query editor help
+      customQueryParameters: ''
+      # Enable Exemplars
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+    secureJsonData:
+      # Authentification si nécessaire
+      # httpHeaderValue1: 'Bearer token_here'
+    basicAuth: false
+    basicAuthUser: ''
+    basicAuthPassword: ''
+    withCredentials: false
+    
+  # Loki - Logs centralisés
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      maxLines: 1000
+      # Derived fields pour navigation vers Jaeger
+      derivedFields:
+        - name: TraceID
+          label: trace_id
+          url: $${__value.raw}
+          # Expression regex pour extraire trace ID des logs
+          regex: '"trace_id":"([^"]+)"'
+          datasourceUid: jaeger
+        - name: RequestID
+          label: request_id
+          url: http://localhost:3000/explore?orgId=1&left=["now-1h","now","Loki",{"expr":"{job=\"aindusdb\"} |~ \"${__value.raw}\""}]
+          regex: '"request_id":"([^"]+)"'
+    basicAuth: false
+    
+  # Jaeger - Tracing distribué (optionnel)
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:14268
+    isDefault: false
+    version: 1
+    editable: false
+    uid: jaeger
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki
+        tags: ['job', 'instance', 'pod', 'namespace']
+        mappedTags: [
+          { key: 'service.name', value: 'job' }
+        ]
+        mapTagNamesEnabled: false
+        spanStartTimeShift: '1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: false
+        filterBySpanID: false
+    
+  # PostgreSQL - Métriques base de données
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: aindusdb
+    user: aindusdb_user
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1300  # PostgreSQL 13+
+      timescaledb: false
+    secureJsonData:
+      password: 'aindusdb_password_change_me'
+    
+  # Redis - Métriques cache (si exporteur Redis disponible)
+  - name: Redis
+    type: prometheus
+    access: proxy
+    url: http://redis-exporter:9121
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      httpMethod: GET
+      queryTimeout: 30s
+      timeInterval: 15s
+      # Spécifique à Redis exporter
+      customQueryParameters: ''
+    
+  # TestData - Datasource de test pour développement
+  - name: TestData
+    type: testdata
+    access: proxy
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      # Configuration pour données de test
+      
+  # Elasticsearch - Logs d'audit et recherche avancée (optionnel)
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    isDefault: false
+    version: 1
+    editable: false
+    database: '[aindusdb-logs-]YYYY.MM.DD'
+    jsonData:
+      interval: Daily
+      timeField: '@timestamp'
+      esVersion: 70
+      includeFrozen: false
+      maxConcurrentShardRequests: 5
+      logMessageField: message
+      logLevelField: level
+    basicAuth: false
+
+# Configuration des notifications pour alertes
+notifiers:
+  - name: Slack Alerts
+    type: slack
+    uid: slack-alerts
+    org_id: 1
+    is_default: true
+    send_reminder: true
+    disable_resolve_message: false
+    frequency: 5m
+    settings:
+      url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+      channel: '#aindusdb-alerts'
+      username: 'Grafana AindusDB'
+      title: 'AindusDB Alert'
+      text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      
+  - name: Email Alerts
+    type: email
+    uid: email-alerts
+    org_id: 1
+    is_default: false
+    send_reminder: true
+    disable_resolve_message: false
+    frequency: 10m
+    settings:
+      addresses: 'admin@aindusdb.local;ops@aindusdb.local'
+      subject: '[AindusDB] {{ .CommonLabels.alertname }}'
+      body: |
+        Alert: {{ .CommonLabels.alertname }}
+        Status: {{ .Status }}
+        {{ range .Alerts }}
+        Summary: {{ .Annotations.summary }}
+        Description: {{ .Annotations.description }}
+        {{ end }}
+
+# Configuration des contact points (Grafana 8+)
+contactPoints:
+  - name: slack-contact
+    receivers:
+      - uid: slack-alerts
+        type: slack
+        settings:
+          url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+          channel: '#aindusdb-alerts'
+          username: 'AindusDB Monitor'
+          title: |
+            {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} 
+            {{ .GroupLabels.alertname }}
+          text: |
+            {{ range .Alerts }}
+            *Alert:* {{ .Labels.alertname }}
+            *Status:* {{ .Status }}
+            *Instance:* {{ .Labels.instance }}
+            *Summary:* {{ .Annotations.summary }}
+            {{ if .Annotations.description }}*Description:* {{ .Annotations.description }}{{ end }}
+            {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+            {{ end }}
+          
+# Règles d'alerte par défaut
+alertRules:
+  - name: AindusDB High Error Rate
+    condition: 
+      query: 'rate(aindusdb_http_requests_total{status_code=~"5.."}[5m]) / rate(aindusdb_http_requests_total[5m]) > 0.1'
+      datasource: Prometheus
+    frequency: 1m
+    for: 2m
+    annotations:
+      summary: 'High error rate detected'
+      description: 'Error rate is {{ $value | printf "%.2f" }}% for the last 5 minutes'
+      runbook_url: 'https://docs.aindusdb.com/runbooks/high-error-rate'
+      
+  - name: AindusDB High Response Time
+    condition:
+      query: 'histogram_quantile(0.95, rate(aindusdb_http_request_duration_seconds_bucket[5m])) > 1'
+      datasource: Prometheus
+    frequency: 1m
+    for: 5m
+    annotations:
+      summary: 'High response time detected'
+      description: '95th percentile response time is {{ $value | printf "%.2f" }}s'

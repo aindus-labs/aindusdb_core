@@ -1,0 +1,149 @@
+/* Custom CSS for AindusDB Core Documentation */
+
+/* Brand colors */
+:root {
+    --aindusdb-primary: #009688;
+    --aindusdb-secondary: #316192;
+    --aindusdb-accent: #2496ED;
+    --aindusdb-success: #4CAF50;
+    --aindusdb-warning: #FF9800;
+    --aindusdb-error: #F44336;
+}
+
+/* Custom header styling */
+.wy-nav-top {
+    background-color: var(--aindusdb-primary);
+}
+
+/* Sidebar customization */
+.wy-side-nav-search {
+    background-color: var(--aindusdb-primary);
+}
+
+.wy-side-nav-search input[type=text] {
+    border-radius: 4px;
+}
+
+/* Code blocks enhancement */
+.highlight pre {
+    border-radius: 6px;
+    border-left: 4px solid var(--aindusdb-primary);
+}
+
+/* API documentation styling */
+.py.class > dt {
+    background-color: rgba(0, 150, 136, 0.1);
+    border-left: 4px solid var(--aindusdb-primary);
+    padding-left: 8px;
+}
+
+.py.method > dt {
+    background-color: rgba(49, 97, 146, 0.1);
+    border-left: 4px solid var(--aindusdb-secondary);
+    padding-left: 8px;
+}
+
+.py.function > dt {
+    background-color: rgba(36, 150, 237, 0.1);
+    border-left: 4px solid var(--aindusdb-accent);
+    padding-left: 8px;
+}
+
+/* Badges and labels */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: var(--aindusdb-success);
+}
+
+.badge-warning {
+    color: #212529;
+    background-color: var(--aindusdb-warning);
+}
+
+.badge-error {
+    color: #fff;
+    background-color: var(--aindusdb-error);
+}
+
+/* Table styling */
+.wy-table-responsive table td, 
+.wy-table-responsive table th {
+    white-space: normal;
+}
+
+.wy-table thead th, 
+.rst-content table.docutils thead th, 
+.rst-content table.field-list thead th {
+    background-color: var(--aindusdb-primary);
+    color: white;
+}
+
+/* Navigation improvements */
+.wy-menu-vertical li.current > a {
+    border-right: 4px solid var(--aindusdb-primary);
+}
+
+.wy-menu-vertical li.current a {
+    background-color: rgba(0, 150, 136, 0.1);
+}
+
+/* Admonition styling */
+.rst-content .admonition.note {
+    border-left: 4px solid var(--aindusdb-primary);
+}
+
+.rst-content .admonition.warning {
+    border-left: 4px solid var(--aindusdb-warning);
+}
+
+.rst-content .admonition.danger {
+    border-left: 4px solid var(--aindusdb-error);
+}
+
+/* Footer customization */
+.rst-footer-buttons {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #e1e4e5;
+}
+
+/* API endpoint styling */
+.http-method {
+    font-family: monospace;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.http-get {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.http-post {
+    background-color: #FF9800;
+    color: white;
+}
+
+.http-put {
+    background-color: #2196F3;
+    color: white;
+}
+
+.http-delete {
+    background-color: #F44336;
+    color: white;
+}

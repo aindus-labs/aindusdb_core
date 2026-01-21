@@ -1,0 +1,94 @@
+FROM python:3.11-slim
+
+# Métadonnées ORION optimisées
+LABEL maintainer="AindusDB Team <team@aindusdb.io>"
+LABEL version="1.0.0"
+LABEL description="AindusDB Core - ORION Native Vector Database"
+LABEL orion.platform="cloud-native"
+LABEL orion.compatible="v2.5+"
+
+# Variables d'environnement ORION
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV ORION_RUNTIME=true
+ENV ORION_SERVICE_NAME=aindusdb-api
+
+# Installation optimisée pour ORION
+RUN apt-get update && apt-get install -y \
+    curl \
+    gcc \
+    g++ \
+    libpq-dev \
+    # ORION monitoring tools
+    htop \
+    netcat-openbsd \
+    # Nettoyage
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Création utilisateur non-root ORION compatible
+RUN groupadd -r aindusdb --gid 1001 && \
+    useradd -r -g aindusdb --uid 1001 aindusdb
+
+# Répertoire de travail ORION
+WORKDIR /app
+
+# Copie optimisée pour cache ORION
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie du code source
+COPY . .
+
+# Création des dossiers avec permissions ORION
+RUN mkdir -p /app/uploads /app/logs /app/cache \
+    && chown -R aindusdb:aindusdb /app \
+    && chmod -R 755 /app
+
+# ORION health check endpoints
+RUN echo '#!/bin/bash\ncurl -f http://localhost:8000/health || exit 1' > /usr/local/bin/health-check \
+    && chmod +x /usr/local/bin/health-check
+
+# ORION metrics endpoint
+RUN echo '#!/bin/bash\ncurl -s http://localhost:8000/metrics' > /usr/local/bin/metrics-check \
+    && chmod +x /usr/local/bin/metrics-check
+
+# Switch vers utilisateur non-root
+USER aindusdb
+
+# Port exposé pour ORION mesh
+EXPOSE 8000
+
+# ORION optimized health checks
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /usr/local/bin/health-check
+
+# Labels ORION pour service discovery
+LABEL orion.service.name="aindusdb-core-api"
+LABEL orion.service.port="8000"
+LABEL orion.service.protocol="http"
+LABEL orion.service.health="/health"
+LABEL orion.service.metrics="/metrics"
+LABEL orion.service.type="api"
+
+# ORION constellation tags
+LABEL orion.constellation.tier="backend"
+LABEL orion.constellation.component="database-api"
+LABEL orion.constellation.dependencies="postgres,redis"
+
+# Performance labels pour ORION auto-scaling
+LABEL orion.performance.cpu.request="500m"
+LABEL orion.performance.cpu.limit="2000m"
+LABEL orion.performance.memory.request="1Gi"
+LABEL orion.performance.memory.limit="4Gi"
+
+# ORION startup command optimisé
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "4", \
+     "--loop", "uvloop", \
+     "--http", "httptools", \
+     "--access-log"]
