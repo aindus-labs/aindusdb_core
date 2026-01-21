@@ -1,8 +1,7 @@
-# 🌍 AINDUSDB CORE - DOCUMENTATION MONDIALE
+# 🌍 AINDUSDB CORE - DOCUMENTATION 
 
 **Version** : 1.0.0  
 **Date** : 21 janvier 2026  
-**Niveau** : Enterprise World-Class Documentation  
 **🚀 STATUT** : PRODUCTION-READY - TESTS VALIDÉS ✅
 
 ---
@@ -157,7 +156,7 @@ aindusdb_core_docs/
 ### **1. 📖 Installation**
 ```bash
 # Cloner le repository
-git clone https://github.com/aindusdb/aindusdb_core.git
+git clone https://github.com/aindus-labs/aindusdb_core.git
 cd aindusdb_core
 
 # Configuration environnement
@@ -294,8 +293,8 @@ spec:
 ## 📞 **SUPPORT & COMMUNAUTÉ**
 
 ### **💬 Canaux Support**
-- **Documentation** : https://docs.aindusdb.io
-- **GitHub Issues** : https://github.com/aindusdb/aindusdb_core/issues
+- **Documentation** : https://docs.aindusdb.andus.fr
+- **GitHub Issues** : https://github.com/aindus-labs/aindusdb_core/issues
 - **Community Slack** : https://aindusdb.slack.com
 - **Enterprise Support** : enterprise@aindusdb.io
 
@@ -356,11 +355,11 @@ spec:
 ---
 
 **Pour toute question ou support technique :**  
-📧 **Email** : support@aindusdb.io  
-🌐 **Web** : https://aindusdb.io  
-📚 **Documentation** : https://docs.aindusdb.io  
+📧 **Email** : support-aindusdb@aindus.fr  
+🌐 **Web** : https://aindusdb.aindus.fr  
+📚 **Documentation** : https://docs-aindusdb.aindus.fr  
 
 ---
 
-*Documentation mondiale créée le 21 janvier 2026*  
-*Architecture Enterprise World-Class*
+*Documentation créée le 21 janvier 2026*  
+
